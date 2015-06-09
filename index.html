@@ -1,0 +1,109 @@
+<html>
+
+<head>
+  <title>Improving interactive programming with recordings</title>
+  <link rel="stylesheet" href="common.css"></link>
+</head>
+
+<body>
+  <everything>
+    <header>
+      <descr>Improving interactive programming with recordings</descr>
+      <author>by braden anderson</author>
+    </header>
+
+    <abstract>
+      <p>
+        This paper focuses on improving the interactive programming experience. In particular, the concept of <i>recordings</i> is introduced as a way for programmers to create method definitions interactively. An extension to the OO language used in CS 137A is discussed.
+      </p>
+    </abstract>
+
+    <section>
+      <sectionHeader>
+        <a name="introduction"></a>
+        <span>Introduction</span>
+      </sectionHeader>
+      <p>
+        Most programming is not straightforward. If the solution to a problem is not known (as is usually the case), then programmers typically spend most of their time exploring the problem space before arriving at a solution. Interactive programming (and exploratory programming in general) is a useful technique for experimenting with possible solutions because it's faster and easier than the alternatives.
+      </p>
+
+      <p>
+        Most programs, however, are written statically, and most languages optimize for this use case. Writing a program statically is hard, and requires programs to be written slowly and carefully in order to avoid awful things happening at runtime. Language designers know this, and usually compromise ease of use so that programs written in their language can last a long time. Because of this compromise, language features that would encourage program experimentation but harm program stability are often not considered.
+      </p>
+
+      <p>
+        Then how can a language help programmers experiment without getting in their way? One solution is the REPL; it's a pure value add, since it doesn't limit the programmer's ability to write code in the usual way.
+      </p>
+
+      <p>
+        But REPL-based programming often falls short of true interactivity. In most interpreted languages, constructs such as classes and methods require too much <i>top-down</i> design, creating unnecessary cognitive load in the prototyping phase.
+        <figure>
+          <img src="images/python_repl_factorial.png" style="height: 7em" />
+          <figcaption>
+            A typical REPL-based programming experience. In most languages, methods are either specified completely, or not at all. Program syntax gives little room for error. (In fact, it took the author several attempts to write this simple factorial function.)
+          </figcaption>
+        </figure>
+      </p>
+      <p>
+        <h3>Bottom-up prototyping</h3>
+        A language that makes prototyping easy would avoid use of top-down language constructs like the one shown above. Other top-down constructs include classes and modules.
+
+        Programmers should be free to focus on small procedural details without worrying about the big picture. Big picture decisions should be deferred until they are absolutely necessary, so as to improve speed of prototyping.
+      </p>
+      <p>
+        One thing programmers should be able to do is provide an incomplete specification of functionality.
+
+        For example, when defining a factorial function, the programmer should be able to specify return values for only a few functions -- in doing this, the programmer can solve many problems partway in the same amount of time they would have been able to solve a single problem completely. This is good because prototypes typically don't require complete solutions -- they just need to be ready as a proof of concept.
+      </p>
+      <p>
+        Decisions made in bottom-up prototyping should be late-binding. In fact, the bigger the decision, the later it should be made. Programs should reach <code>Hello World</code> before system architecture is chosen. Classes should be created from runtime objects, for example, and not the other way around. (This is "prototype-based" programming.)
+
+
+
+      </p>
+      <p>
+        <h3>Recordings</h3>
+        Another bottom-up language construct is the recording.
+
+        Programmers should be able to "record" a good solution to a problem, or provide only a temporary solution that will be returned to later.
+      </p>
+
+      <p>
+        Interpreters can use recordings to keep track of how a user manipulates program state. This process can then be encapsulated into a <code>Recording</code> object, and treated as executable code. This means that recordings can be run multiple times, composed with other code, and even added to static class definitions.
+      </p>
+
+      <p>
+        Recordings represent a significant improvement over the current state of the art because they allow programmers to interact with the static version of a program in a way that hasn't been done in other languages. Automated versioning is also included, so that programmers are totally free to experiment and modify the source program.
+      </p>
+    </section>
+    <section>
+      <sectionHeader>
+        <a name="design"></a>
+        <span>Design</span>
+      </sectionHeader>
+      <p>
+
+      </p>
+    </section>
+    <section>
+      <sectionHeader>
+        <a name="strategy"></a>
+        <span>Strategy</span>
+      </sectionHeader>
+      <p>
+
+      </p>
+    </section>
+    <section>
+      <sectionHeader>
+        <a name="postmortem"></a>
+        <span>Postmortem</span>
+      </sectionHeader>
+      <p>
+
+      </p>
+    </section>
+  </everything>
+</body>
+
+</html>
