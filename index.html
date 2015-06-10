@@ -53,19 +53,14 @@
       <p>
         One thing programmers should be able to do is provide an incomplete specification of functionality.
 
-        For example, when defining a factorial function, the programmer should be able to specify return values for only a few functions -- in doing this, the programmer can solve many problems partway in the same amount of time they would have been able to solve a single problem completely. This is good because prototypes typically don't require complete solutions -- they just need to be ready as a proof of concept.
+        For example, when defining a factorial function, the programmer should be able to specify return values for only a few inputs -- in doing this, the programmer can solve many problems partway in the same amount of time they would have been able to solve a single problem completely. This is good because prototypes typically don't require complete solutions -- they just need to be ready as a proof of concept.
       </p>
       <p>
-        Decisions made in bottom-up prototyping should be late-binding. In fact, the bigger the decision, the later it should be made. Programs should reach <code>Hello World</code> before system architecture is chosen. Classes should be created from runtime objects, for example, and not the other way around. (This is "prototype-based" programming.)
-
-
-
+        Decisions made in bottom-up prototyping should be late-binding. In fact, the bigger the decision, the later it should be made. Classes should be created from runtime objects, for example, and not the other way around. (This is "prototype-based" programming.)
       </p>
       <p>
         <h3>Recordings</h3>
-        Another bottom-up language construct is the recording.
-
-        Programmers should be able to "record" a good solution to a problem, or provide only a temporary solution that will be returned to later.
+        Another bottom-up language construct is the <i>recording</i>: programmers should be able to "record" a good solution to a problem, or provide only a temporary solution that will be returned to later.
       </p>
 
       <p>
@@ -82,25 +77,131 @@
         <span>Design</span>
       </sectionHeader>
       <p>
-
+        The proof of concept for recordings is much less ambitious than a complete recording implementation would be. This project explores how trapping execution during runtime can be used to free the programmer from writing code statically.
+      </p>
+      <p>
+        Recordings in the demonstration language are created automatically for all failed message sends. Beginning a recording spawns a REPL environment, where users can manipulate state and decide which commands they want to keep in their recording. When they're finished, they can choose to discard the recording (causing the message send to return the last value returned by the REPL), or assign the recording to the method selector that originally caused the interrupt.
+        <figure>
+          <img src="images/flow_1.png" style="height: 5em;" />
+          <figcaption>
+            Step 1: the user attempts to use an undefined selector on the <code>Number</code> object.
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="images/flow_2.png" style="height: 7em;" />
+          <figcaption>
+            Step 2: the failed message send opens a recording environment. (Here the <code>return</code> is shorthand for saving the recording.)
+          </figcaption>
+        </figure>
+        <figure>
+          <img src="images/flow_3.png" style="height: 5em;" />
+          <figcaption>
+            Step 3: the new method definition is added to the program source!
+          </figcaption>
+        </figure>
+      </p>
+      <p>
+        <h3>Keeping track of state</h3>
+        The demonstration environment includes a visualizer for local state and also system architecture. State is rendered as a nested list of objects, with the innermost scope listed in the deepest level. Classes are organized visually as a tree, with the class definition (methods and parameters) alongside.
       </p>
     </section>
     <section>
       <sectionHeader>
-        <a name="strategy"></a>
-        <span>Strategy</span>
+        <a name="implementation"></a>
+        <span>Implementation</span>
       </sectionHeader>
       <p>
+        The proof of concept for recordings is implemented as a demonstration language built on top of the object-oriented language used in CS 137A. The language is written in Javascript, and runs in a webpage. CodeMirror is used as a text editor. The source code of a program written in the demo language is translated to Javascript, and then evaluated. In this sense, the demonstration language is 'compiled'; however, in a recording environment, statements are translated and evaluated line-by-line.
+      </p>
+      <p>
+        <h3>Translator</h3>
+        The source-to-source translator for the object-oriented language was used here. One major change is that scope is now made explicit in most places -- <code>send(instance, selector)</code> became <code>send(scope, instance, selector)</code>, and so on. Giving up Javascript's scoping semantics makes generated code more complex but it also makes it easier to reason about scope, escpecially at runtime. This is because scope is now just a plain old Javascript object.
+      </p>
+      <p>
+        Another large change is that all programs are wrapped in an IIFE (immediately-invoked function expression) that accepts program scope and a runtime object. This made it much easier to provide a REPL, because each line could be treated as a separate program seeded with some state and an existing class table.
+        <figure>
+          <codeBlock>
+(function(Runtime) {
+    var _result = null;
+    _result = 2;
+    return _result;
+}).call({scope: {}}, new OORuntime())()
+          </codeBlock>
+          <figcaption>
+            A translation of a program that evaluates to 2. The program is seeded with an empty scope and a brand new <code>Runtime</code> object.
+          </figcaption>
+        </figure>
+      </p>
+      <p>
+        <h3>Runtime</h3>
+        A global <code>Runtime</code> object manages the runtime state of an OO program. Its responsibilities include maintaining a list of class definitions, delegating message sends, and instantiating new objects. The runtime also talks to the UI so that it can display additional dialogs to the user.
+      </p>
+      <p>
+        The runtime in the demo language shares a lot of code with the global <code>OO</code> library, except the runtime is actually an instance of an <code>OORuntime</code> class. This allows the language implementer to control aspects of the program like initial scope, and since <code>OORuntime</code> uses a class pattern it encapsulates more program state.
+      </p>
+      <p>
+        <h3>Pausing execution</h3>
+        Pharo-style "message not understood" traps were hard to implement with the source-to-source translator because there is no easy way to pause Javascript code execution. (The Javascript <code>debugger;</code> statement does this, but that functionality doesn't seem to be accessible by end users.) To get around this problem, the OO program continues running but the runtime keeps a copy of program scope, effectively forking the program so that the user canvas interact with the recording environment. (Program scope is all that is needed to encapsulate program state.)
 
+        This way the programmer can see state mutations as they experiment with their recording.
+      </p>
+      <p>
+        Managing execution ended up being the most challenging part of the implementation, due to the high degree of user interactivity in the demonstration language. It's still not fully implemented; a better source-to-source translator would use continuation-passing style to allow statements to be paused and continued.
+      </p>
+      <p>
+        <h3>Creating recordings</h3>
+        The recording environment is triggered by the runtime on message sends with unknown selectors -- it's similar to a Smalltalk-style trap. This trap opens a new CodeMirror instance for the user to write their new recording. The recording environment works similar to a REPL, and all local state is displayed adjacent to the CodeMirror instance. When the user is satisfied with their recording, they can select with lines to keep from their REPL history. The user can then choose whether to accept the recording as the new implementation for the method, or to return immediately without implementing the method.
+      </p>
+      <p>
+        <h3>Keeping changes</h3>
+        Recordings can be converted into methods by the runtime. Since recordings are just a sequence of statements in the demo language, they can be placed into an appropriate location in the code. In the current implementation, they are added as method declarations directly after their corresponding class declaration. This way the programmer can come back later and modify the method definition as they please.
+      </p>
+      <p>
+        Implementing this feature was relatively straightforward, because it's just a matter of splicing a string into the program source.
+      </p>
+      <p>
+        <h3>Visualizers</h3>
+        D3 and React are used to render the class hierarchy diagram and class definitions, respectively. React is also used to render current program state. This part of the demo was by far the easiest to accomplish, and was done first for the pure OO language.
       </p>
     </section>
     <section>
       <sectionHeader>
-        <a name="postmortem"></a>
-        <span>Postmortem</span>
+        <a name="extensions"></a>
+        <span>Further Extensions</span>
       </sectionHeader>
       <p>
+        There are many extensions needed to make the demonstration language a true "bottom-up" programming language.
+      </p>
+      <p>
+        <h3>More flexible recordings</h3>
+        Recordings in the demo language are quite limited -- they're really just an easy way to define methods at runtime. They should really be a more interactive way of creating anonymous functions. For example, if the programmer finds themselves repeating some sequence of tasks, their programming environment should be able to encapsulate those tasks into a recording. Recordings should have the same power as traditional functions.
+      </p>
+      <p>
+        Another extension to recordings would be "partially defined functions". In most untyped languages, it is difficult to write a function that will behave well on all inputs. For example, a Javascript function operating on a <code>Number</code> might not check if the number is negative, or above some bound. In languages with similar behavior, functions are defined over all parameters by default. This makes it difficult to reason about a program because it's hard to keep track of what shortcuts a programmer made to reach a functioning prototype. Therefore, functions in a better language should be <i>incomplete</i> by default -- meaning that if the parameter to a function doesn't pass some predicate, the runtime will consider it an invalid message send and trigger the debugger. This gives the language some of the benefits of function overloading in typed languages, without the programmer having to worry about types.
+      </p>
+      <p>
+        <h3>Changes to the object model</h3>
+        Objects in the demo language should be more flexible. Instance variables on objects should be public in the same way that methods are, to aid in speedy prototyping.
+      </p>
+      <p>
+        The demo language should also be extended to support anonymous objects.
+        <figure>
+          <img src="images/js_obj.png" style="height: 9em" />
+          <figcaption>
+            Javascript's anonymous objects allow programmers to create structured data with ease.
+          </figcaption>
+        </figure>
 
+        The syntax and semantics would be similar to Javascript, with anonymous objects inheriting properties from <code>Object</code>.
+
+      </p>
+      <p>
+
+        Programmers should also be able to modify the inheritance graph at will. For example, two anonymous objects can have a common ancestor; the creation of this common ancestor could be automated, or managed by a human to achieve higher-quality code.
+      </p>
+      <p>
+        <h3>Version control</h3>
+        One of the problems with recordings is that they might modify the program source in a surprising way. This would be especially problematic when the source code to a program is not ever read or refactored by a human; it would be very hard to understand what the code is doing, and why. Integrating recordings with version control would provide a clear line of causation between automated changes to the code, and would help a programmer reconstruct the history of a program. Therefore instead of compromising language semantics to make generated code easier to understand, there would be another angle from which to understand the code: the evolution of the program over time.
       </p>
     </section>
   </everything>
